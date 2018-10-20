@@ -133,9 +133,10 @@ class DoubleDuelQ():
     def update_target(self):
         update_target(self.target_ops, self.sess)
 
-    def clean_up(self, save, step):
+    def clean_up(self, save):
         if save:
-            self.saver.save(self.sess, self.mod_path + 'model.ckpt', global_step=step)
+            self.saver.save(self.sess, self.mod_path + 'model.ckpt'
+                            , global_step=self.mainQN.global_step)
         self.sess.close()
 
 

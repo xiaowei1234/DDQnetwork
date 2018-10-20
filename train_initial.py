@@ -19,9 +19,9 @@ def synthetic_lst():
 if __name__ == '__main__':
     buff = Buff(c.update_freq, c.batch_size, c.buffer_path, buffer_size=200000, dev_size=0.01)
     buff.cut_old()
-    lst_buff = synthetic_lst
+    lst_buff = synthetic_lst()
     mod = Model(buff.buffer_cols, c.action_nums, c.params, c.mod_path, c.mod_records_path, True)
-    for experience in buff.samples(10000):
+    for experience in buff.samples(12000):
         mod.train_on_sample(experience, buff.dev_sample)
         if random.random() < 0.25:
             tbuff = np.random.choice(lst_buff)

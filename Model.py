@@ -34,7 +34,7 @@ class Model(DoubleDuelQ):
         super().__init__(cols, len(actions), params, mod_path, new_mod)
         self.initialize_diagnostics()
         self.this_run_iterations = 0
-        self.save_freq = self.params['update_freq'] * 10
+        self.save_freq = self.params['update_freq'] * 50
         self.iterations = self.sess.run(self.mainQN.global_step)
 
     def initialize_diagnostics(self):
@@ -42,7 +42,7 @@ class Model(DoubleDuelQ):
         initializes or loads model diagnostics
         """
         self.recordings = helpers.load_pickle(self.mod_rec_path, default={})
-        if len(self.recordings) == 0:
+        if len(self.recordings) == 0 or self.new_mod:
             self.recordings['iter_array'] = np.array([], dtype=np.int32)
             self.recordings['loss_array'] = np.array([], dtype=np.float)
             self.recordings['grad_array'] = np.array([], dtype=np.float)
@@ -64,12 +64,13 @@ class Model(DoubleDuelQ):
         """
         loss, grads, targetQ = self.get_loss_grads(*experience, self.params['beta'])
         m_grad, m_std = self.summarize_grads(grads)
+        self.iterations = self.sess.run(self.mainQN.global_step)
         self.this_run_iterations += 1
         if self.iterations < 100:
             return
         if self.iterations % self.params['update_freq'] == 0:
             self.update_target()
-        if self.iterations < 5000:
+        if self.iterations < 2000:
             return
         if not toplot:
             return
@@ -172,23 +173,23 @@ class Model(DoubleDuelQ):
             plt.subplots(5, 2, sharex=True, sharey=False, figsize=(8, 15))
         f.suptitle(helpers.format_title(self.params), fontsize=12)
         ax1.set_title("Train Loss", fontsize=8)
-        ax1.plot(self.recordings['iter_array'], self.recordings['loss_array'])
+        ax1.plot(self.recordings['iter_array'][:-1], self.recordings['loss_array'][:-1])
         if 'valid_array' in self.recordings:
             ax2.set_title("Validation Loss", fontsize=8)
-            ax2.plot(self.recordings['iter_array'], self.recordings['valid_array'])
+            ax2.plot(self.recordings['iter_array'][:-1], self.recordings['valid_array'][:-1])
         ax3.set_title("mean gradients", fontsize=8)
-        ax3.plot(self.recordings['iter_array'], self.recordings['grad_array'])
-        ax4.set_title("gradient mean std", fontsize=8)
-        ax4.plot(self.recordings['iter_array'], self.recordings['grad_std_array'])
+        ax3.plot(self.recordings['iter_array'][:-1], self.recordings['grad_array'][:-1])
+        ax4.set_title("gradient std", fontsize=8)
+        ax4.plot(self.recordings['iter_array'][:-1], self.recordings['grad_std_array'][:-1])
         ax5.set_title("Train Rewards", fontsize=8)
-        ax5.plot(self.recordings['iter_array'], self.recordings['reward_array'])
+        ax5.plot(self.recordings['iter_array'][:-1], self.recordings['reward_array'][:-1])
         ax6.set_title("TargetQ", fontsize=8)
-        ax6.plot(self.recordings['iter_array'], self.recordings['target_array'])
+        ax6.plot(self.recordings['iter_array'][:-1], self.recordings['target_array'][:-1])
         action_df = pd.DataFrame(self.recordings['action_list'])
         for i, ax in enumerate([ax7, ax8, ax9, ax10]):
             if i in action_df.columns:
                 ax.set_title('proportion of action {}'.format(i), fontsize=8)
-                ax.plot(self.recordings['iter_array'], action_df[i])
+                ax.plot(self.recordings['iter_array'][:-1], action_df[i][:-1])
 #        fp = os.path.join(os.path.sep, plotpath, str(self.params)[1:-1] + '.pdf')
         f.savefig(plot_path)
         plt.close(f)
@@ -198,9 +199,9 @@ class Model(DoubleDuelQ):
         clean up after model run finishes
         save_mod (boolean): whether to save the current model or not
         """
-        super().clean_up(save_mod, self.iterations)
-        remove_last = lambda array: array[:-1]
-        for key in self.recordings:
-            self.recordings[key] = remove_last(self.recordings[key])
+        super().clean_up(save_mod)
+#        remove_last = lambda array: array[:-1]
+#        for key in self.recordings:
+#            self.recordings[key] = remove_last(self.recordings[key])
         if save_mod:
             helpers.write_pickle(self.mod_rec_path, self.recordings)
