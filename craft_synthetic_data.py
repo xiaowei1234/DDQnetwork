@@ -3,10 +3,13 @@
 """
 
 @author: xiaowei
+This is NOT used in production. Used to help the the initial model
 """
 import helpers
 import constants as c
 import numpy as np
+from Buffer import Buff
+
 #%%
 
 def random_apps(df):
@@ -31,6 +34,8 @@ def make_synthetic_action(orig_df, action):
 
 #%%
 if __name__ == '__main__':
+    buff = Buff(c.update_freq, c.batch_size, c.buffer_path, buffer_size=200000, dev_size=0.01)
+    buff.cut_old()
     bdf = helpers.load_pickle(c.buffer_path)
     for act in range(1, len(c.action_nums)):
         df = make_synthetic_action(bdf, act)

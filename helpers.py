@@ -3,6 +3,8 @@
 """
 
 @author: xiaowei
+
+These are helper functions that get called by other functions
 """
 import pandas as pd
 import numpy as np
@@ -20,21 +22,28 @@ def empty_df():
 def run_ms_to_ts(epoch):
     return pd.to_datetime(epoch, unit='ms')# - pd.Timedelta(hours=7)
 
-
+# float to integer
 float_int = lambda series: (series.fillna(0) * 100).astype(np.int32)
 
+# check if object is iterable and not a string
 is_iter = lambda thing: hasattr(thing, '__iter__') and not isinstance(thing, str)
 
+# if object is not list make it a list of len 1
 make_list = lambda thing: thing if is_iter(thing) else [thing]
 
+# return 1 if value is boolean or has str value true else 0
 bool_conv = lambda v: 1 if v == True or (isinstance(v, str) and v.lower() == 'true') else 0
 
+# return return if obj is iterable and has at least one element
 has_one_ele = lambda v: hasattr(v, '__iter__') and len(v) > 0
 
+# returns true if string is actually float in str format
 float_comp = lambda chr: bool(re.match(r"^[0-9]*\.[0-9]+$", chr)) if isinstance(chr, str) else False
 
+# returns true if string is atually int in str format
 int_comp = lambda chr: bool(re.match("^[0-9]+$", chr)) if isinstance(chr, str) else False
 
+# converts str to float
 float_conv = lambda chr: np.float64(chr) if float_comp(chr) or int_comp(chr) or isinstance(chr, float) else np.nan
 
 
@@ -68,6 +77,11 @@ def cell_wrapper(df, func, field, drop=True, new_name=None):
     decorator function for pandas pipe api
     takes func which applies function to one value in field
     returns modified dataframe
+    df (pandas dataframe): the dataframe to apply transformation on
+    func (function): function to apply to each value of field
+    field (str): name of column in df
+    drop (boolean): whether to drop 'field' after transformation
+    new_name (str): whether to rename transformed 'field' column to new_name
     """
     lst = list(df[field].apply(func))
     if isinstance(lst[0], dict):
@@ -85,6 +99,8 @@ def df_wrapper(df, func):
     """
     decorator function for pandas dataframe pipe api
     takes function that transforms df and then concats by column and returns both original and transformed
+    df (pandas dataframe): dataframe of interest
+    func (function): function to apply to dataframe to produce new dataframe to concat horizontally
     """
     new_df = func(df)
     return pd.concat([df, new_df], axis=1)
@@ -139,6 +155,9 @@ def sklearn_func(df, sk_func, trans=None):
 
 
 def index_series(df, name):
+    """
+    return a series of counts where 'name' is a column in df's index
+    """
     return pd.Series(df.index.get_level_values(name))
 
 
@@ -159,12 +178,18 @@ def memoize(func):
 
 
 def get_dir_from_path(path):
-        sep = os.path.sep
-        lst = path.split(sep)
-        return sep.join(lst[:-1]) + sep
+    """
+    get just the path of the directory from path
+    """
+    sep = os.path.sep
+    lst = path.split(sep)
+    return sep.join(lst[:-1]) + sep
 
 
 def make_folder(path):
+    """
+    if path doesn't exist make a folder that allows path to exist for writing
+    """
     if os.path.exists(path):
         return
     if path.find('.') > 0:
@@ -175,6 +200,9 @@ def make_folder(path):
 
 
 def get_plot_path(path=c.plot_path):
+    """
+    returns a path to folder for outputting model diagnostics plot
+    """
     dt = str(date.today())
     folder = path + dt
     make_folder(folder)
@@ -182,10 +210,13 @@ def get_plot_path(path=c.plot_path):
 
 
 def success_collect_rows(df):
+    """
+    returns array of boolean if a row successfully transacted for the full amount
+    """
     return df.bank_code.isin(c.success_codes) & (df.actions != c.zero_action)
 
 
-def figure_out_success_rewards(row):
+def figure_out_success_rewards(row, div100=False):
     """
     given action nums and rewards figure out the correct amount to collect
     row (pandas series): one row in dataframe with actions and handset values
@@ -193,7 +224,9 @@ def figure_out_success_rewards(row):
     """
     act = c.action_nums[row.actions]
     if act < 1.01:
-        return row.handset * act #* 0.01
+        if div100:
+            return row.handset * act * 0.01
+        return row.handset * act
     return act
 
 

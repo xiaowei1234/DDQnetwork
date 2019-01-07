@@ -1,4 +1,12 @@
-# import pandas as pd
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+
+@author: xiaowei
+for reference
+https://medium.com/@awjuliani/simple-reinforcement-learning-with-tensorflow-part-4-deep-q-networks-and-beyond-8438a3e2b8df
+"""
+
 import numpy as np
 import tensorflow as tf
 import helpers
@@ -7,12 +15,16 @@ zeros = tf.zeros_initializer()
 
 
 def xavier_init(shape):
+    """
+    returns function that will initialize weights for layers
+    """
     xavier = tf.contrib.layers.xavier_initializer()
     return tf.divide(xavier(shape), 10)   
 
 
 class Qnetwork():
     """
+    core neural network
     """
     def __init__(self, num_feat, n_hidden_layers, neuron_mult, num_actions, lr):
         self.global_step = tf.Variable(1, dtype=tf.int32, trainable=False, name='global_step')
@@ -64,7 +76,6 @@ class Qnetwork():
         self.reg_penalty = tf.add_n([tf.nn.l2_loss(w) for w in wgt_lst]) * self.beta
         self.loss = tf.reduce_mean(self.error) + self.reg_penalty
         self.trainer = tf.train.AdamOptimizer(learning_rate=lr)
-        # # clip gradients to counter exploding gradients
         self.grads_tup = self.trainer.compute_gradients(self.loss)
         self.update_model = self.trainer.apply_gradients(self.grads_tup, global_step=self.global_step)#
         # self.update_model = self.trainer.minimize(self.loss)
@@ -141,6 +152,9 @@ class DoubleDuelQ():
 
 
 def update_target_graph(tf_vars, tau):
+    """
+    return operations to update target network to main network
+    """
     total_vars = len(tf_vars)
     op_holder = []
     half = total_vars//2
@@ -151,5 +165,8 @@ def update_target_graph(tf_vars, tau):
 
 
 def update_target(op_holder, sess):
+    """
+    execute operations from update_target_graph 
+    """
     for op in op_holder:
         sess.run(op)

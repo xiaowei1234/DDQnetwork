@@ -24,7 +24,7 @@ class Buff:
         """
         self.path = path
         self.buffer_df = pd.read_pickle(path).sort_values('run_time_ms')
-        self.num_samples = max(int((self.buffer_rows - buffer_size) / pass_over),1)
+        self.num_samples = max(int((self.buffer_rows - buffer_size) / pass_over), 1)
         self.buffer_size = buffer_size
         self.batch_size = batch_size
         self.dev_size = dev_size

@@ -3,6 +3,9 @@
 """
 
 @author: xiaowei
+
+This is used during the initial modeling process to search for the optimal set of hyperparameters
+    for the neural network Q-Learning model and not used in production
 """
 
 from sklearn.model_selection import ParameterGrid

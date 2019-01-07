@@ -102,17 +102,27 @@ class Model(DoubleDuelQ):
         ce_encoded (pandas dataframe): output from ce_pipe_functions
         random_prop (float): proportion of records to move randomly
         """
+        # to record how many training steps the model has taken
         steps = self.sess.run(self.mainQN.global_step)
+        # proportion to assign random walk
         random_prop = max(random_prop - c.annealing * steps, c.min_rand_prop)
-        state = Buff.prep_state(ce_encoded, c.identification_vars)
+        # a data transformation
+        state = Buff.prep_state(ce_encoded)
+        # these columns are relevant to calculate the amount due (except for run_time_ms)
         df = ce_encoded.loc[:, ['app_code', 'handset', 'collect', 'run_time_ms']]
+        # transform number back from 100x (reverse from ce_pipe_functions)
         df.loc[:, ['handset', 'collect']] = df[['handset', 'collect']] / 100
+        # dollar amount of the service plan
         plan = df.collect - df.handset
+        # get model recommended action
         df['actions'] = self.get_action(state, 1, random_prop)
+        # based upon action determine the amount
         df['collect'] = df.apply(helpers.figure_out_success_rewards, axis=1)
+        # if amount to collect is smaller than threshold collect all instead
         convert_to_zeros = df.collect * 1.02 + c.min_amount >= df.handset
         df.loc[convert_to_zeros, 'actions'] = 0
         df.loc[convert_to_zeros, 'collect'] = df.handset[convert_to_zeros]
+        # total collect amount is handset amount + service plan
         df['collect'] = df.collect + plan
         return (df.set_index('app_code')[['actions', 'collect', 'run_time_ms']]
                 .to_json(orient='index', double_precision=2))
@@ -190,7 +200,6 @@ class Model(DoubleDuelQ):
             if i in action_df.columns:
                 ax.set_title('proportion of action {}'.format(i), fontsize=8)
                 ax.plot(self.recordings['iter_array'][:-1], action_df[i][:-1])
-#        fp = os.path.join(os.path.sep, plotpath, str(self.params)[1:-1] + '.pdf')
         f.savefig(plot_path)
         plt.close(f)
 
@@ -200,8 +209,5 @@ class Model(DoubleDuelQ):
         save_mod (boolean): whether to save the current model or not
         """
         super().clean_up(save_mod)
-#        remove_last = lambda array: array[:-1]
-#        for key in self.recordings:
-#            self.recordings[key] = remove_last(self.recordings[key])
         if save_mod:
             helpers.write_pickle(self.mod_rec_path, self.recordings)

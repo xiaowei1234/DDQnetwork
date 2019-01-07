@@ -3,6 +3,8 @@
 """
 
 @author: xiaowei
+
+train online model in production
 """
 from Buffer import Buff
 from Model import Model

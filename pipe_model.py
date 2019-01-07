@@ -1,15 +1,27 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+
+@author: xiaowei
+
+this calls pipe_ce and pipe_ca to get data and load into buffer
+"""
+
 import sys
 import pandas as pd
 from pipe_ce import ce_pipe_functions
 from pipe_ca import ca_pipe_functions
 from get_collection_engine import get_input_date
 import constants as c
-#import helpers
 from Env import Env
 from datetime import timedelta
 
 
 def merge_sources(ce_df, ca_df):
+    """
+    returns dataframe that is a merge of ce_df and ca_df
+    also fills in bank_code for model action where $0 collection attempt (no attempt)
+    """
     zeros = ce_df['actions'] == c.zero_action
     zero_df = ce_df.loc[zeros, :]
     zero_df['bank_code'] = '99'
@@ -20,6 +32,10 @@ def merge_sources(ce_df, ca_df):
 
 
 def get_one_day(dt, limit):
+    """
+    pipes in cleaned dataframe into env
+    dt (str): yyyy-mm-dd
+    """
     ts = get_input_date(dt)
     print ('Piping Collection Engine data ' + dt)
     ce_encoded = ce_pipe_functions(ts, limit)
@@ -28,7 +44,7 @@ def get_one_day(dt, limit):
     print ('Merging data sources')
     merged_df = merge_sources(ce_encoded, ca_clean)
     if limit is None:
-        merged_df.to_pickle(c.repo_path + c.save_data_prefix + dt + '.pkl')
+        merged_df.to_pickle(c.data_path + c.save_data_prefix + dt + '.pkl')
         print ('Piping into environment')
         env = Env()
         print ('unresolved: ', env.unresolved_df.shape, '\n', 'dead: ', len(env.dead_set), '\n'
@@ -41,6 +57,9 @@ def get_one_day(dt, limit):
 
 
 if __name__ == '__main__':
+    """
+    This main should be called during production once a day to pipe in latest day of data
+    """
 #    ssh -L 9998:10.128.1.43:27017 xwei@10.128.1.27
     start = sys.argv[1]
     num_days = int(sys.argv[2])

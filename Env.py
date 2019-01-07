@@ -72,7 +72,7 @@ class Env:
         df (pandas dataframe): the dataframe to add to the buffer
         """
         success = df.bank_code.isin(c.success_codes)
-        df.loc[success, 'reward'] = df.loc[success, :].apply(helpers.figure_out_success_rewards, axis=1)
+        df.loc[success, 'reward'] = df.loc[success, :].apply(helpers.figure_out_success_rewards, axis=1, div100=True)
         df.loc[~success, 'reward'] = df.bank_code.apply(helpers.fail_code_map)
         # chunk is created to differentiate different payment journeys for the same app
         df['chunk'] = int(time.time()) % 10000
@@ -99,7 +99,9 @@ class Env:
         schrodinger_df = (self.unresolved_df.append(add_unresolved)
                         .merge(to_buffer_codes_df, on='app_code', how='left')
                         )
+        # to_buffer_df contains payments that either completed or lapsed beyond the model cutoff date
         to_buffer_df = schrodinger_df.loc[schrodinger_df.buff == 1, :].drop('buff', axis=1)
+        # unresolved are payments that haven't completed and are still within model cutoff
         self.unresolved_df = schrodinger_df.loc[~(schrodinger_df.buff == 1), :].drop('buff', axis=1)
         self.make_buffer(to_buffer_df)
 

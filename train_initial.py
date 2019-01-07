@@ -1,5 +1,10 @@
-# Xiao Wei
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 
+@author: xiaowei
+This is NOT used in production. Used to train the initial model
+"""
 from Buffer import Buff
 from Model import Model
 import helpers
